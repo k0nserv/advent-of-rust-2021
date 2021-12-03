@@ -7,7 +7,8 @@ enum Mode {
     MostCommon,
     LeastCommon,
 }
-fn find_bit(x: usize, data: &[Vec<char>], mode: Mode) -> char {
+
+fn find_bit(x: usize, data: &[Vec<char>], mode: Mode) -> u8 {
     let (ones, zeroes) = (0..data.len()).fold((0, 0), |(count_ones, count_zeroes), y| {
         if data[y][x] == '1' {
             (count_ones + 1, count_zeroes)
@@ -17,20 +18,8 @@ fn find_bit(x: usize, data: &[Vec<char>], mode: Mode) -> char {
     });
 
     match mode {
-        Mode::MostCommon => {
-            if ones >= zeroes {
-                '1'
-            } else {
-                '0'
-            }
-        }
-        Mode::LeastCommon => {
-            if ones < zeroes {
-                '1'
-            } else {
-                '0'
-            }
-        }
+        Mode::MostCommon => (ones >= zeroes) as u8,
+        Mode::LeastCommon => (ones < zeroes) as u8,
     }
 }
 
@@ -41,9 +30,10 @@ fn find_rating(mut data: Vec<Vec<char>>, mode: Mode) -> u64 {
         let bit = find_bit(x, &data, mode);
         let mut should_retain = data
             .iter()
-            .map(|row| row[x] == bit)
+            .map(|row| row[x] == '1' && bit == 1 || row[x] == '0' && bit == 0)
             .collect::<Vec<_>>()
             .into_iter();
+
         data.retain(|_| should_retain.next().unwrap());
 
         x += 1;
@@ -71,13 +61,10 @@ pub fn star_one(input: &str) -> u64 {
 
     let number_length = data[0].len();
     let gamma_rate = (0..number_length).fold(0_u64, |acc, x| {
-        let has_more_ones =
-            (0..data.len()).filter(|y| data[*y][x] == '1').count() >= (data.len() / 2);
-        let bit = if has_more_ones { 1 } else { 0 };
+        let bit = find_bit(x, &data, Mode::MostCommon);
 
-        acc | (bit << (number_length - x - 1))
+        acc | ((bit as u64) << (number_length - x - 1))
     });
-
     let epsilon_rate = (gamma_rate ^ u64::MAX) & mask(number_length);
 
     gamma_rate * epsilon_rate
