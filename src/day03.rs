@@ -65,7 +65,7 @@ pub fn star_one(input: &str) -> u64 {
     let data: Vec<Vec<char>> = input
         .lines()
         .map(str::trim)
-        .filter(|l| l.len() > 3)
+        .filter(|l| l.len() > 0)
         .map(|l| l.chars().collect())
         .collect();
 
@@ -88,7 +88,7 @@ pub fn star_two(input: &str) -> u64 {
     let data: Vec<Vec<char>> = input
         .lines()
         .map(str::trim)
-        .filter(|l| l.len() > 3)
+        .filter(|l| l.len() > 0)
         .map(|l| l.chars().collect())
         .collect();
 
