@@ -78,7 +78,6 @@ pub fn star_one(input: &str) -> u64 {
         acc | (bit << (number_length - x - 1))
     });
 
-    println!("mask={:0128b}", mask(5));
     let epsilon_rate = (gamma_rate ^ u64::MAX) & mask(number_length);
 
     gamma_rate * epsilon_rate
@@ -95,7 +94,7 @@ pub fn star_two(input: &str) -> u64 {
     let oxygen_rating = find_rating(data.clone(), Mode::MostCommon);
     let co2_scrubber_rating = find_rating(data.clone(), Mode::LeastCommon);
 
-    dbg!(oxygen_rating) * dbg!(co2_scrubber_rating)
+    oxygen_rating * co2_scrubber_rating
 }
 
 #[cfg(test)]
