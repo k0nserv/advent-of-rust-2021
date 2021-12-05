@@ -1,8 +1,8 @@
-use std::str::FromStr;
+use std::{collections::HashMap, str::FromStr};
 
 use crate::parse_lines;
 
-#[derive(Debug, Default, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
 struct Point {
     x: i64,
     y: i64,
@@ -82,6 +82,44 @@ impl Line {
             false
         }
     }
+
+    fn points(&self) -> LinePointsIterator {
+        let step_x = (self.end.x - self.start.x).clamp(-1, 1);
+        let step_y = (self.end.y - self.start.y).clamp(-1, 1);
+
+        LinePointsIterator {
+            current: self.start,
+            step: Point::new(step_x, step_y),
+            end: self.end,
+            done: false,
+        }
+    }
+}
+
+struct LinePointsIterator {
+    current: Point,
+    step: Point,
+    end: Point,
+    done: bool,
+}
+
+impl Iterator for LinePointsIterator {
+    type Item = Point;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.done {
+            return None;
+        }
+
+        if self.current == self.end {
+            self.done = true;
+        }
+
+        let next = self.current;
+        self.current = Point::new(self.current.x + self.step.x, self.current.y + self.step.y);
+
+        Some(next)
+    }
 }
 
 impl FromStr for Line {
@@ -109,83 +147,37 @@ impl FromStr for Line {
     }
 }
 
-fn print_grid(grid: impl IntoIterator<Item = impl Iterator<Item = usize>>) {
-    let rows: Vec<String> = grid
-        .into_iter()
-        .map(|row| {
-            row.map(|v| {
-                if v != 0 {
-                    v.to_string()
-                } else {
-                    ".".to_owned()
-                }
-            })
-            .collect::<String>()
-        })
-        .collect();
+fn count(lines: impl IntoIterator<Item = Line>) -> usize {
+    let counts = lines.into_iter().flat_map(|l| l.points()).fold(
+        HashMap::<Point, usize>::default(),
+        |mut acc, point| {
+            (*acc.entry(point).or_insert(0)) += 1;
 
-    println!("{}", rows.join("\n"))
+            acc
+        },
+    );
+
+    counts.into_iter().filter(|(_, c)| c >= &2).count()
 }
 
 pub fn star_one(input: &str) -> usize {
     let lines: Vec<Line> = parse_lines(input).collect();
-    let max = lines.iter().fold(Point::ORIGIN, |acc, line| {
-        if acc.x < line.end.x {
-            Point::new(line.end.x, acc.y)
-        } else if acc.y < line.end.y {
-            Point::new(acc.x, line.end.y)
-        } else {
-            acc
-        }
-    });
 
-    let x_range = 0..=max.x;
-    let y_range = 0..=max.y;
-    let lines_iter = &lines
-        .iter()
-        .filter(|l| l.is_vertical() || l.is_horizontal());
-
-    let grid = x_range.flat_map(|x| {
-        y_range.clone().map(move |y| {
-            lines_iter
-                .clone()
-                .filter(|l| l.contains(&Point::new(x, y)))
-                .count()
-        })
-    });
-
-    grid.filter(|c| c >= &2).count()
+    count(
+        lines
+            .into_iter()
+            .filter(|l| l.is_horizontal() || l.is_vertical()),
+    )
 }
 
 pub fn star_two(input: &str) -> usize {
     let lines: Vec<Line> = parse_lines(input).collect();
-    let max = lines.iter().fold(Point::ORIGIN, |acc, line| {
-        if acc.x < line.end.x {
-            Point::new(line.end.x, acc.y)
-        } else if acc.y < line.end.y {
-            Point::new(acc.x, line.end.y)
-        } else {
-            acc
-        }
-    });
 
-    let x_range = 0..=max.x;
-    let y_range = 0..=max.y;
-    let lines_iter = &lines
-        .iter()
-        .filter(|l| l.is_vertical() || l.is_horizontal() || l.is_diagonal());
-
-    let grid = x_range.map(|x| {
-        y_range.clone().map(move |y| {
-            let point = Point::new(x, y);
-
-            if x == 0 && y == 0 {}
-
-            lines_iter.clone().filter(|l| l.contains(&point)).count()
-        })
-    });
-
-    grid.flatten().filter(|c| c >= &2).count()
+    count(
+        lines
+            .into_iter()
+            .filter(|l| l.is_horizontal() || l.is_vertical() || l.is_diagonal()),
+    )
 }
 
 #[cfg(test)]
@@ -255,5 +247,40 @@ mod tests {
         };
 
         assert!(!line.contains(&Point::new(0, 0)));
+    }
+
+    #[test]
+    fn test_points_diagonal() {
+        let line = Line {
+            start: Point::new(1, 3),
+            end: Point::new(3, 1),
+        };
+
+        let points: Vec<_> = line.points().collect();
+
+        assert_eq!(
+            points,
+            vec![Point::new(1, 3), Point::new(2, 2), Point::new(3, 1),]
+        );
+    }
+
+    #[test]
+    fn test_points_horizontal() {
+        let line = Line {
+            start: Point::new(0, 3),
+            end: Point::new(3, 3),
+        };
+
+        let points: Vec<_> = line.points().collect();
+
+        assert_eq!(
+            points,
+            vec![
+                Point::new(0, 3),
+                Point::new(1, 3),
+                Point::new(2, 3),
+                Point::new(3, 3)
+            ]
+        );
     }
 }
