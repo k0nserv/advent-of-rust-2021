@@ -161,23 +161,15 @@ fn count(lines: impl IntoIterator<Item = Line>) -> usize {
 }
 
 pub fn star_one(input: &str) -> usize {
-    let lines: Vec<Line> = parse_lines(input).collect();
+    let lines = parse_lines::<Line>(input);
 
-    count(
-        lines
-            .into_iter()
-            .filter(|l| l.is_horizontal() || l.is_vertical()),
-    )
+    count(lines.filter(|l| l.is_horizontal() || l.is_vertical()))
 }
 
 pub fn star_two(input: &str) -> usize {
-    let lines: Vec<Line> = parse_lines(input).collect();
+    let lines = parse_lines::<Line>(input);
 
-    count(
-        lines
-            .into_iter()
-            .filter(|l| l.is_horizontal() || l.is_vertical() || l.is_diagonal()),
-    )
+    count(lines.filter(|l| l.is_horizontal() || l.is_vertical() || l.is_diagonal()))
 }
 
 #[cfg(test)]
