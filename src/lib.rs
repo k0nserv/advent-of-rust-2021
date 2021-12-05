@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+#[allow(unused_variables)]
 use std::fs::File;
 use std::io::Read;
 use std::str::FromStr;
@@ -221,8 +223,8 @@ mod tests {
 
         let input = load_file("day05.txt");
 
-        assert_eq!(star_one(&input), 1);
-        assert_eq!(star_two(&input), 1);
+        assert_eq!(star_one(&input), 5169);
+        assert_eq!(star_two(&input), 22083);
     }
 
     #[test]
