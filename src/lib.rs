@@ -223,8 +223,8 @@ mod tests {
 
         let input = load_file("day05.txt");
 
-        assert_eq!(star_one(&input), 5169);
-        assert_eq!(star_two(&input), 22083);
+        super::time("Day 5, part 1", || assert_eq!(star_one(&input), 5169));
+        super::time("Day 5, part 2", || assert_eq!(star_two(&input), 22083));
     }
 
     #[test]

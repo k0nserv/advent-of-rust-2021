@@ -2,27 +2,44 @@ use std::{collections::HashMap, str::FromStr};
 
 use crate::parse_lines;
 
-#[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
-struct Point {
-    x: i64,
-    y: i64,
+#[derive(Debug, Default, Copy, Clone, Hash, Eq, PartialEq)]
+struct Point<T> {
+    x: T,
+    y: T,
 }
 
-impl Point {
-    const ORIGIN: Point = Point { x: 0, y: 0 };
+impl<T> Point<T> {
+    const ORIGIN: Point<i64> = Point { x: 0, y: 0 };
 
-    fn new(x: i64, y: i64) -> Self {
+    fn new(x: T, y: T) -> Self {
         Self { x, y }
     }
 }
 
-impl FromStr for Point {
+impl Point<f64> {
+    fn normalize(&self) -> Self {
+        let length = (self.x.powf(2.0) + self.y.powf(2.0)).sqrt();
+
+        Self {
+            x: self.x / length,
+            y: self.y / length,
+        }
+    }
+}
+
+impl<T: FromStr> FromStr for Point<T>
+where
+    <T as FromStr>::Err: std::fmt::Display,
+{
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut parts = s.split(",");
 
-        fn parse(value: Option<&str>) -> Result<i64, String> {
+        fn parse<V: FromStr>(value: Option<&str>) -> Result<V, String>
+        where
+            <V as FromStr>::Err: std::fmt::Display,
+        {
             let invalid_point = || format!("Invalid point {:?}", value);
 
             value
@@ -43,11 +60,35 @@ impl FromStr for Point {
 
 #[derive(Debug)]
 struct Line {
-    start: Point,
-    end: Point,
+    start: Point<i64>,
+    end: Point<i64>,
+    dir: Point<f64>,
+    step: Point<f64>,
 }
 
 impl Line {
+    fn new(start: Point<i64>, end: Point<i64>) -> Self {
+        fn fix_step(s: f64) -> f64 {
+            if s.is_infinite() {
+                0.0
+            } else {
+                s.abs()
+            }
+        }
+
+        let dir =
+            Point::new(end.x as f64 - start.x as f64, end.y as f64 - start.y as f64).normalize();
+
+        let step = Point::new(fix_step(1.0 / dir.x), fix_step(1.0 / dir.y));
+
+        Self {
+            start,
+            end,
+            dir,
+            step,
+        }
+    }
+
     fn is_horizontal(&self) -> bool {
         self.start.y == self.end.y
     }
@@ -63,33 +104,11 @@ impl Line {
         x_diff == y_diff
     }
 
-    fn contains(&self, point: &Point) -> bool {
-        if self.is_horizontal() || self.is_vertical() {
-            (point.x >= self.start.x.min(self.end.x) && point.x <= self.end.x.max(self.start.x))
-                && (point.y >= self.start.y.min(self.end.y)
-                    && point.y <= self.end.y.max(self.start.y))
-        } else if self.is_diagonal() {
-            let m = (self.start.y - self.end.y) / (self.start.x - self.end.x);
-
-            let on_line = (point.y - self.start.y) == m * (point.x - self.start.x);
-            let between_points = point.x >= self.start.x.min(self.end.x)
-                && point.x <= self.start.x.max(self.end.x)
-                && point.y >= self.start.y.min(self.end.y)
-                && point.y <= self.start.y.max(self.end.y);
-
-            on_line && between_points
-        } else {
-            false
-        }
-    }
-
     fn points(&self) -> LinePointsIterator {
-        let step_x = (self.end.x - self.start.x).clamp(-1, 1);
-        let step_y = (self.end.y - self.start.y).clamp(-1, 1);
-
         LinePointsIterator {
             current: self.start,
-            step: Point::new(step_x, step_y),
+            dir: self.dir,
+            step: self.step,
             end: self.end,
             done: false,
         }
@@ -97,14 +116,15 @@ impl Line {
 }
 
 struct LinePointsIterator {
-    current: Point,
-    step: Point,
-    end: Point,
+    current: Point<i64>,
+    dir: Point<f64>,
+    step: Point<f64>,
+    end: Point<i64>,
     done: bool,
 }
 
 impl Iterator for LinePointsIterator {
-    type Item = Point;
+    type Item = Point<i64>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.done {
@@ -116,7 +136,10 @@ impl Iterator for LinePointsIterator {
         }
 
         let next = self.current;
-        self.current = Point::new(self.current.x + self.step.x, self.current.y + self.step.y);
+        self.current = Point::new(
+            (self.current.x as f64 + self.step.x * self.dir.x).round() as i64,
+            (self.current.y as f64 + self.step.y * self.dir.y).round() as i64,
+        );
 
         Some(next)
     }
@@ -128,7 +151,7 @@ impl FromStr for Line {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut parts = s.split("->");
 
-        fn parse(value: Option<&str>) -> Result<Point, String> {
+        fn parse(value: Option<&str>) -> Result<Point<i64>, String> {
             let invalid_point = || format!("Invalid point {:?}", value);
 
             value
@@ -141,7 +164,7 @@ impl FromStr for Line {
         }
 
         match (parse(parts.next()), parse(parts.next())) {
-            (Ok(start), Ok(end)) => Ok(Self { start, end }),
+            (Ok(start), Ok(end)) => Ok(Self::new(start, end)),
             _ => Err(format!("Invalid line {}", s)),
         }
     }
@@ -149,7 +172,7 @@ impl FromStr for Line {
 
 fn count(lines: impl IntoIterator<Item = Line>) -> usize {
     let counts = lines.into_iter().flat_map(|l| l.points()).fold(
-        HashMap::<Point, usize>::default(),
+        HashMap::<Point<i64>, usize>::default(),
         |mut acc, point| {
             (*acc.entry(point).or_insert(0)) += 1;
 
@@ -198,55 +221,8 @@ mod tests {
     }
 
     #[test]
-    fn test_line_contains() {
-        let line = Line {
-            start: Point::new(0, 9),
-            end: Point::new(5, 9),
-        };
-
-        assert!(line.contains(&Point::new(0, 9)));
-    }
-
-    #[test]
-    fn test_line_contains_diagonal() {
-        let line = Line {
-            start: Point::new(1, 1),
-            end: Point::new(3, 3),
-        };
-
-        assert!(line.contains(&Point::new(1, 1)));
-        assert!(line.contains(&Point::new(2, 2)));
-        assert!(line.contains(&Point::new(3, 3)));
-    }
-
-    #[test]
-    fn test_line_contains_diagonal_negative() {
-        let line = Line {
-            start: Point::new(1, 3),
-            end: Point::new(3, 1),
-        };
-
-        assert!(line.contains(&Point::new(1, 3)));
-        assert!(line.contains(&Point::new(2, 2)));
-        assert!(line.contains(&Point::new(3, 1)));
-    }
-
-    #[test]
-    fn test_line_contains_diagonal_1() {
-        let line = Line {
-            start: Point::new(8, 0),
-            end: Point::new(0, 8),
-        };
-
-        assert!(!line.contains(&Point::new(0, 0)));
-    }
-
-    #[test]
     fn test_points_diagonal() {
-        let line = Line {
-            start: Point::new(1, 3),
-            end: Point::new(3, 1),
-        };
+        let line = Line::new(Point::new(1, 3), Point::new(3, 1));
 
         let points: Vec<_> = line.points().collect();
 
@@ -258,12 +234,9 @@ mod tests {
 
     #[test]
     fn test_points_horizontal() {
-        let line = Line {
-            start: Point::new(0, 3),
-            end: Point::new(3, 3),
-        };
+        let line = Line::new(Point::new(0, 3), Point::new(3, 3));
 
-        let points: Vec<_> = line.points().collect();
+        let points: Vec<_> = line.points().take(5).collect();
 
         assert_eq!(
             points,
