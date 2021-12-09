@@ -11,11 +11,11 @@ fn neighbors(p: (usize, usize), max: (usize, usize)) -> Vec<(usize, usize)> {
         result.push((p.0, p.1 - 1));
     }
 
-    if p.0 <= (max.0 - 2) {
+    if p.0 < (max.0 - 1) {
         result.push((p.0 + 1, p.1));
     }
 
-    if p.1 <= (max.1 - 2) {
+    if p.1 < (max.1 - 1) {
         result.push((p.0, p.1 + 1));
     }
 
