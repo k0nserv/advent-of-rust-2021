@@ -14,6 +14,5 @@ My solutions to advent of code 2021 in [Rust](https://www.rust-lang.org/).
 1. :clipboard: [Day 8](https://github.com/k0nserv/advent-of-rust-2021/blob/main/src/day08.rs)
 1. :clipboard: [Day 9](https://github.com/k0nserv/advent-of-rust-2021/blob/main/src/day09.rs)
 1. :clipboard: [Day 10](https://github.com/k0nserv/advent-of-rust-2021/blob/main/src/day10.rs),
-1. :clipboard: [Day 11](https://github.com/k0nserv/advent-of-rust-2021/blob/main/src/day11.rs)
-   
-
+1. :clipboard: [Day 11](https://github.com/k0nserv/advent-of-rust-2021/blob/main/src/day11.rs), :tv: [Recording](https://www.twitch.tv/videos/1231545935)
+1. :clipboard: [Day 12](https://github.com/k0nserv/advent-of-rust-2021/blob/main/src/day12.rs), :tv: [Recording](https://www.twitch.tv/videos/1231545935?t=00h49m02s), I completed some of it off stream.
