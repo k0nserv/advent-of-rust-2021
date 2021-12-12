@@ -1,9 +1,61 @@
 use std::{
-    collections::{HashMap, HashSet, LinkedList, VecDeque},
+    collections::{hash_map::Entry, HashMap, HashSet, LinkedList, VecDeque},
+    hash::Hash,
+    rc::Rc,
     str::FromStr,
 };
 
 type ID = String;
+
+#[derive(Debug, Default)]
+struct HashCow<K, V> {
+    map: Rc<HashMap<K, V>>,
+}
+
+impl<K: Eq + Hash + Clone, V: Clone> HashCow<K, V> {
+    fn new(map: HashMap<K, V>) -> Self {
+        Self { map: Rc::new(map) }
+    }
+
+    fn insert(&mut self, key: K, value: V) -> Option<V> {
+        match Rc::get_mut(&mut self.map) {
+            Some(map) => map.insert(key, value),
+            None => {
+                let mut cloned: HashMap<K, V> = HashMap::clone(&self.map);
+                let res = cloned.insert(key, value);
+
+                self.map = Rc::new(cloned);
+
+                res
+            }
+        }
+    }
+
+    fn entry(&mut self, key: K) -> Entry<'_, K, V> {
+        if Rc::strong_count(&self.map) == 1 {
+            return Rc::get_mut(&mut self.map).unwrap().entry(key);
+        }
+
+        self.map = Rc::new(HashMap::clone(&self.map));
+        Rc::get_mut(&mut self.map).unwrap().entry(key)
+    }
+
+    fn get(&self, k: &K) -> Option<&V> {
+        self.map.get(k)
+    }
+
+    fn iter(&self) -> impl Iterator<Item = (&K, &V)> {
+        self.map.iter()
+    }
+}
+
+impl<K, V> Clone for HashCow<K, V> {
+    fn clone(&self) -> Self {
+        Self {
+            map: Rc::clone(&self.map),
+        }
+    }
+}
 
 #[derive(Debug)]
 struct Cave {
@@ -98,7 +150,7 @@ impl FromStr for System {
 #[derive(Default, Debug)]
 struct State {
     path: LinkedList<ID>,
-    visited_small_caves: HashMap<ID, usize>,
+    visited_small_caves: HashCow<ID, usize>,
 }
 
 impl State {
