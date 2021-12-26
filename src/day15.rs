@@ -93,7 +93,7 @@ fn reconstruct_path(
     let mut current = &from;
 
     while let Some(next) = came_from.get(current) {
-        path.push(next);
+        path.push(*next);
         current = next;
     }
 
