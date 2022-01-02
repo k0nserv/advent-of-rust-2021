@@ -109,7 +109,7 @@ pub fn star_one(min: (i64, i64), max: (i64, i64)) -> i64 {
 
     for y in min.1..1000 {
         let steps = calculate_steps_required(y, &area);
-        for x in 0..1000 {
+        for x in 0..=area.max.x {
             if let Some(path) = simulate(Point::new(0, 0), Point::new(x, y), steps, area_ref) {
                 results.push(path);
             }
@@ -139,7 +139,7 @@ pub fn star_two(min: (i64, i64), max: (i64, i64)) -> usize {
 
     for y in min.1..1000 {
         let steps = calculate_steps_required(y, &area);
-        for x in 0..(1000 * min.0.signum()) {
+        for x in 0..=area.max.x {
             let velocity = Point::new(x, y);
 
             if let Some(_) = simulate(Point::new(0, 0), velocity, steps, &area) {
