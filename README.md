@@ -20,3 +20,4 @@ My solutions to advent of code 2021 in [Rust](https://www.rust-lang.org/).
 1. :clipboard: [Day 14](https://github.com/k0nserv/advent-of-rust-2021/blob/main/src/day14.rs)
 1. :clipboard: [Day 15](https://github.com/k0nserv/advent-of-rust-2021/blob/main/src/day15.rs)
 1. :clipboard: [Day 16](https://github.com/k0nserv/advent-of-rust-2021/blob/main/src/day16.rs)
+1. :clipboard: [Day 17](https://github.com/k0nserv/advent-of-rust-2021/blob/main/src/day17.rs)
